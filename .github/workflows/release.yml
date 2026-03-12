@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate package.json version matches tag
+        run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          TAG_VER="${{ steps.version.outputs.VERSION }}"
+          if [ "$PKG_VER" != "$TAG_VER" ]; then
+            echo "ERROR: package.json version ($PKG_VER) does not match tag ($TAG_VER)"
+            exit 1
+          fi
+
+      - name: Build release zip
+        run: |
+          ZIP="cn-security-v${{ steps.version.outputs.VERSION }}.zip"
+          mkdir -p release-tmp/src
+          cp index.ts openclaw.plugin.json package.json install.ps1 README.md whitelist-template.json CHANGELOG.md LICENSE release-tmp/
+          cp src/rules.ts src/config.ts src/audit.ts release-tmp/src/
+          cd release-tmp && zip -r "../$ZIP" . && cd ..
+          echo "ZIP_NAME=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Extract changelog for this release
+        id: changelog
+        run: |
+          # Extract the section for the current version from CHANGELOG.md
+          VERSION="v${{ steps.version.outputs.VERSION }}"
+          awk "/^## \[${{ steps.version.outputs.VERSION }}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md > release_notes.txt
+          echo "Release notes extracted."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "cn-security ${{ github.ref_name }}"
+          body_path: release_notes.txt
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false

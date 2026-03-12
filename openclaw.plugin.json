@@ -1,0 +1,10 @@
+{
+  "id": "cn-security",
+  "name": "CN Security",
+  "description": "Security hardening for China users: blocks browser password/history access, social app data, system credentials, dangerous commands, and potential network exfiltration. Append-only audit log. User-editable whitelist (AI cannot modify).",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

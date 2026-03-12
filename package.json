@@ -1,0 +1,35 @@
+{
+  "name": "cn-security",
+  "version": "1.0.0",
+  "description": "OpenClaw security plugin for China users — blocks browser credentials, social app data, dangerous commands, and data exfiltration. Append-only audit log with user-editable whitelist.",
+  "keywords": [
+    "audit-log",
+    "china",
+    "credential-protection",
+    "openclaw",
+    "openclaw-plugin",
+    "security"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.ts",
+    "openclaw.plugin.json",
+    "src/rules.ts",
+    "src/config.ts",
+    "src/audit.ts",
+    "README.md",
+    "whitelist-template.json"
+  ],
+  "type": "module",
+  "peerDependencies": {
+    "openclaw": ">=2026.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

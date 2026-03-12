@@ -1,0 +1,9 @@
+{
+  "_readme": "cn-security 用户白名单模板 — 请用文本编辑器手动修改，AI 不会也不允许修改此文件",
+  "_paths_help": "paths: 允许访问的文件路径（不区分大小写子字符串匹配）。例：C:\\MyProject\\app.db",
+  "_commandPatterns_help": "commandPatterns: 允许执行的命令关键字（不区分大小写子字符串匹配）。例：sqlite3 myapp.db",
+  "_tools_help": "tools: 完全跳过安全检查的工具名称。例：web_fetch",
+  "paths": [],
+  "commandPatterns": [],
+  "tools": []
+}
