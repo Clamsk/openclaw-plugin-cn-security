@@ -1,4 +1,4 @@
-# Contributing to openclaw-plugin-cn-security
+# 贡献指南 / Contributing to openclaw-plugin-cn-security
 
 感谢您考虑为本项目贡献！以下是参与方式。
 
@@ -60,8 +60,8 @@
 
 ```bash
 # 克隆并安装到本地 OpenClaw
-git clone https://github.com/YOUR_USERNAME/openclaw-plugin-cn-security.git
-powershell -ExecutionPolicy Bypass -File install.ps1 -InstallDir "$(pwd)"
+git clone https://github.com/Clamsk/openclaw-plugin-cn-security.git
+powershell -ExecutionPolicy Bypass -File install.ps1
 
 # 重启网关并测试
 openclaw gateway stop
@@ -73,3 +73,82 @@ openclaw gateway run
 ## 行为准则
 
 本项目遵循 [Contributor Covenant](https://www.contributor-covenant.org/) 行为准则。请保持友善和尊重。
+
+---
+---
+
+# Contributing to openclaw-plugin-cn-security
+
+Thank you for considering contributing! Here's how to get involved.
+
+---
+
+## Reporting Issues
+
+Before opening an Issue, please:
+
+1. Search [existing Issues](../../issues) to avoid duplicates
+2. Confirm you are on the latest version
+3. Use the appropriate template (Bug Report / Feature Request) and fill in all fields
+
+---
+
+## Submitting a Pull Request
+
+1. **Fork** this repository and create a branch on your fork:
+
+   ```bash
+   git checkout -b feat/my-new-rule
+   ```
+
+2. Make your changes following these guidelines:
+   - New path rules: add to the appropriate array in `src/rules.ts`
+   - New command rules: append a regex to `DANGEROUS_COMMAND_PATTERNS` with a comment describing the attack scenario
+   - Keep rules **precise** to avoid false positives on legitimate operations
+
+3. Use Conventional Commit message format:
+
+   ```
+   feat: add WeChat backup path to sensitive paths
+   fix: narrow LSASS dump regex to avoid matching log files
+   docs: update whitelist examples
+   ```
+
+4. Submit the PR and fill in all template fields, especially:
+   - **Attack scenario description** for new/modified rules
+   - False-positive risk assessment and test results
+
+---
+
+## Rule Contribution Standards
+
+New rules must satisfy the following before merging:
+
+| Standard | Description |
+|----------|-------------|
+| Attack authenticity | Rule corresponds to a real credential-theft technique with a CVE or public PoC reference |
+| False-positive rate | Will not trigger in normal development or office environments |
+| Testing | Provide a trigger example (tool call arguments or command string) and expected behavior |
+| Windows-first | Path rules should cover Windows first; cross-platform rules must be annotated |
+
+---
+
+## Development Environment
+
+This plugin has no standalone build step. Source files are loaded directly by OpenClaw's jiti runtime.
+
+```bash
+# Clone and install into your local OpenClaw
+git clone https://github.com/Clamsk/openclaw-plugin-cn-security.git
+powershell -ExecutionPolicy Bypass -File install.ps1
+
+# Restart the gateway and test
+openclaw gateway stop
+openclaw gateway run
+```
+
+---
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](https://www.contributor-covenant.org/) Code of Conduct. Please be kind and respectful.

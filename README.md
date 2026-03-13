@@ -87,7 +87,7 @@
 
 ```powershell
 # 下载仓库
-git clone https://github.com/YOUR_USERNAME/openclaw-plugin-cn-security.git
+git clone https://github.com/Clamsk/openclaw-plugin-cn-security.git
 cd openclaw-plugin-cn-security
 
 # 运行安装脚本
@@ -243,3 +243,169 @@ powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall
 [MIT](LICENSE) © 2026 openclaw-plugin-cn-security contributors
 
 > 本插件为社区项目，非 OpenClaw 官方插件。
+
+---
+---
+
+# openclaw-plugin-cn-security — English
+
+> **OpenClaw runtime security hardening plugin for Chinese users**
+>
+> Intercepts AI tool calls in real time to block access to browser credentials, domestic social app data, system secrets, and dangerous commands. All events are written to an append-only audit log. The whitelist is user-controlled and **cannot be modified by AI**.
+
+---
+
+## ⚠️ Read Before Installing
+
+**This plugin restricts many AI capabilities. Please understand the implications before installing.**
+
+### Operations blocked after installation
+
+| Type | Details |
+|------|---------|
+| File access | Chrome/Edge/Firefox credential databases, Cookie files |
+| File access | WeChat, QQ, TIM, DingTalk, Lark local data directories |
+| File access | Windows SAM/SECURITY hive, `Microsoft\Credentials`, `Microsoft\Protect` |
+| File access | SSH private keys (`.ssh\id_rsa`, etc.), GPG keyrings |
+| File access | OpenClaw config files (`~\.openclaw\credentials`, `openclaw.json`) |
+| File access | Plugin's own whitelist and installed directory (anti-tamper) |
+| Command exec | mimikatz, sekurlsa, lsadump, privilege::debug |
+| Command exec | reg export HKLM\SAM/SECURITY/SYSTEM |
+| Command exec | LSASS memory dumps (procdump, comsvcs minidump) |
+| Command exec | net user /add, PowerShell Base64 obfuscation, download-and-execute cradles |
+| Command exec | Any command referencing the protected paths above (prevents exec bypass) |
+| Outbound | AI replies containing NTLM hashes, PEM private key blocks, or large base64 payloads |
+
+### Normal functionality that may be affected
+
+- AI cannot read private keys under `~/.ssh/` when helping with SSH key management
+- Analyzing browser data for legitimate purposes requires manually adding a whitelist entry
+- PowerShell scripts referencing protected paths will be blocked entirely
+- `\lark\` directory path segments are matched (exact directory segment, not substrings like "clark" or "larkin")
+
+### Risks that remain out of scope
+
+- Node.js direct `fs.writeFileSync` calls (bypasses hooks) — requires OS-level read-only protection
+- Changing `OPENCLAW_STATE_DIR` environment variable to another path — path rules stop matching
+- Heavily obfuscated commands (multi-layer encoding) — string matching may miss them
+- Social engineering: AI may suggest temporarily disabling protection to "fix a config issue" — **always be skeptical**
+
+> **Bottom line: This plugin is a second line of defense at the AI tool-call layer. It does not replace OS-level access controls or Windows Defender.**
+
+---
+
+## Defense Architecture
+
+```
+User message
+    ↓
+① AI model's own safety judgment (first line of defense)
+    ↓ Only continues if model considers it reasonable
+② before_tool_call hook (this plugin, priority 100)
+    ├─ File tools   → path blacklist match → block / whitelist pass
+    ├─ Exec tools   → command keyword match + path reference check → block / whitelist pass
+    └─ All allow/block events written to audit log
+    ↓
+③ AI prepares reply
+    ↓
+④ message_sending hook (this plugin)
+    └─ Outbound content scan (NTLM/PEM/base64) → cancel / send normally
+    ↓
+⑤ OS-level read-only protection (set by install script)
+    └─ Whitelist + plugin directory set IsReadOnly; AI fs calls cannot write either
+```
+
+**Note**: The plugin only triggers when AI actually attempts a tool call. If the model refuses at step ①, no audit log entry is created — this is expected and means the first line of defense worked.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- OpenClaw ≥ 2026.1.0
+- Node.js ≥ 22
+- Windows (Linux/macOS requires updating path separators in `src/rules.ts`)
+
+### Using the install script (recommended)
+
+```powershell
+git clone https://github.com/Clamsk/openclaw-plugin-cn-security.git
+cd openclaw-plugin-cn-security
+powershell -ExecutionPolicy Bypass -File install.ps1
+openclaw gateway stop
+openclaw gateway run
+```
+
+The install script automatically:
+1. Copies plugin files to `%USERPROFILE%\.openclaw\plugins\cn-security\`
+2. Updates `openclaw.json` `plugins.allow` and `plugins.load.paths`
+3. Creates whitelist template `cn-security-whitelist.json` (UTF-8, no BOM)
+4. **Sets OS-level read-only protection** on plugin files and whitelist
+
+---
+
+## Whitelist Configuration
+
+The whitelist is read-only. To edit, remove and restore protection:
+
+```powershell
+attrib -R "$env:USERPROFILE\.openclaw\cn-security-whitelist.json"
+notepad "$env:USERPROFILE\.openclaw\cn-security-whitelist.json"
+attrib +R "$env:USERPROFILE\.openclaw\cn-security-whitelist.json"
+```
+
+Whitelist format:
+
+```json
+{
+  "paths": ["C:\\MyProject\\app.db"],
+  "commandPatterns": ["sqlite3 myapp.db"],
+  "tools": []
+}
+```
+
+Changes take effect on the next tool call (5-second cache).
+
+---
+
+## Audit Log
+
+Location: `%USERPROFILE%\.openclaw\cn-security-audit.log` (NDJSON, append-only, never truncated)
+
+```powershell
+Get-Content "$env:USERPROFILE\.openclaw\cn-security-audit.log" -Tail 50
+```
+
+---
+
+## Uninstall
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall
+```
+
+---
+
+## Known Limitations
+
+| Limitation | Details |
+|------------|---------|
+| Windows path rules only | Linux/macOS requires editing `src/rules.ts` |
+| No protection against direct Node.js fs calls | `fs.writeFileSync` bypasses hooks; requires OS read-only |
+| String matching can be bypassed | Multi-layer obfuscated commands may slip through |
+| Global whitelist | Cannot scope whitelist per session or user |
+| Plugin overwrite risk | Reinstall needed if OpenClaw update overwrites plugin directory |
+| Environment variable bypass | Changing `OPENCLAW_STATE_DIR` invalidates path rules |
+
+---
+
+## Contributing
+
+Issues and PRs welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+## License
+
+[MIT](LICENSE) © 2026 openclaw-plugin-cn-security contributors
+
+> Community project. Not an official OpenClaw plugin.
